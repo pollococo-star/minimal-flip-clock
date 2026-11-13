@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Reloj Flip · Minimal</title>
+  <meta name="description" content="Reloj flip online minimalista con animación clásica de alta calidad">
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #161616;
+      --surface-2: #1c1c1c;
+      --surface-3: #242424;
+      --text: #f5f5f5;
+      --text-2: rgba(245, 245, 245, 0.72);
+      --text-3: rgba(245, 245, 245, 0.45);
+      --accent: #e5e5e5;
+      --accent-soft: rgba(255, 255, 255, 0.12);
+      --separator: rgba(255, 255, 255, 0.08);
+      --separator-strong: rgba(255, 255, 255, 0.14);
+      --header-bg: rgba(10, 10, 10, 0.82);
+      --sheet-bg: rgba(18, 18, 18, 0.96);
+      --sheet-group: rgba(28, 28, 28, 0.9);
+      --shadow-lg: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
+      --flip-card: #1a1a1a;
+      --flip-card-top: #222;
+      --flip-digit: #f5f5f5;
+      --flip-fold: rgba(255, 255, 255, 0.12);
+      --flip-shade: rgba(0, 0, 0, 0.45);
+      --flip-inner: rgba(255, 255, 255, 0.05);
+      --flip-edge: rgba(255, 255, 255, 0.1);
+      --flip-highlight: rgba(255, 255, 255, 0.08);
+      --flip-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), 0 4px 10px rgba(0, 0, 0, 0.35);
+      --ease-out: cubic-bezier(.22, 1, .36, 1);
+      --flip-duration: .45s;
+      --header-h: 64px;
+      --vh100: 100vh;
+      color-scheme: dark;
+    }
+
+    @supports (height: 100svh) {
+      :root { --vh100: 100svh; }
+    }
+
+    body.light {
+      --bg: #f4f4f5;
+      --surface: #ffffff;
+      --surface-2: #f0f0f2;
+      --surface-3: #e8e8ec;
+      --text: #111111;
+      --text-2: rgba(17, 17, 17, 0.7);
+      --text-3: rgba(17, 17, 17, 0.42);
+      --accent: #111111;
+      --accent-soft: rgba(0, 0, 0, 0.06);
+      --separator: rgba(0, 0, 0, 0.08);
+      --separator-strong: rgba(0, 0, 0, 0.14);
+      --header-bg: rgba(244, 244, 245, 0.86);
+      --sheet-bg: rgba(255, 255, 255, 0.97);
+      --sheet-group: rgba(245, 245, 247, 0.95);
+      --shadow-lg: 0 25px 60px -15px rgba(0, 0, 0, 0.18);
+      --flip-card: #ffffff;
+      --flip-card-top: #f7f7f8;
+      --flip-digit: #111111;
+      --flip-fold: rgba(0, 0, 0, 0.1);
+      --flip-shade: rgba(0, 0, 0, 0.12);
+      --flip-inner: rgba(0, 0, 0, 0.04);
+      --flip-edge: rgba(0, 0, 0, 0.08);
+      --flip-highlight: rgba(255, 255, 255, 0.7);
+      --flip-shadow: 0 16px 36px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.06);
+      color-scheme: light;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+    body {
+      min-height: 100vh;
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      letter-spacing: -0.011em;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      transition: background-color 0.35s ease, color 0.35s ease;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    button { background: none; border: 0; cursor: pointer; font: inherit; color: inherit; }
+    button:disabled { cursor: default; opacity: 0.4; }
+    [hidden] { display: none !important; }
+
+    .app-header {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 100;
+      height: var(--header-h);
+      padding: 0 max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--header-bg);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid var(--separator);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    body.fullscreen-active .app-header {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-100%);
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .app-mark {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--accent-soft);
+      color: var(--text);
+    }
+
+    .app-mark svg { width: 20px; height: 20px; fill: currentColor; }
+
+    .header-brand h1 {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .icon-button {
+      display: inline-grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      color: var(--text-2);
+      background: var(--accent-soft);
+      border: 1px solid var(--separator);
+      transition: background-color 0.2s, color 0.2s, transform 0.15s var(--ease-out);
+    }
+
+    .icon-button:active { transform: scale(0.92); }
+    @media (hover: hover) {
+      .icon-button:hover { color: var(--text); background: var(--separator-strong); }
+    }
+    .icon-button svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--header-h) 24px 48px;
+      width: 100%;
+    }
+
+    body.fullscreen-active main {
+      padding-top: 0;
+    }
+
+    .clock-stage {
+      --u100: min(1.6px, calc(min((100vw - 48px) / 620, (var(--vh100) - 280px) / 220) * 0.9));
+      --u: max(0.35px, var(--u100));
+      --card-w: calc(168 * var(--u));
+      --card-h: calc(208 * var(--u));
+      --card-r: calc(22 * var(--u));
+      --card-gap: calc(14 * var(--u));
+      --digit-size: calc(108 * var(--u));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: calc(28 * var(--u));
+    }
+
+    body.fullscreen-active .clock-stage {
+      --u: max(0.4px, calc(min((100vw - 80px) / 620, (var(--vh100) - 80px) / 220) * 0.95));
+    }
+
+    .flip-display {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--card-gap);
+      filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.45));
+    }
+
+    body.light .flip-display {
+      filter: drop-shadow(0 16px 32px rgba(0, 0, 0, 0.12));
+    }
+
+    .card {
+      position: relative;
+      flex-shrink: 0;
+      width: var(--card-w);
+      height: var(--card-h);
+      border-radius: var(--card-r);
+      background: var(--flip-card);
+      box-shadow: var(--flip-shadow);
+      isolation: isolate;
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      border-radius: inherit;
+      box-shadow: inset 0 0 0 1px var(--flip-edge), inset 0 1.5px 0 var(--flip-highlight);
+      pointer-events: none;
+    }
+
+    .divider {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      z-index: 6;
+      height: 1px;
+      transform: translateY(-50%);
+      background: var(--flip-fold);
+      pointer-events: none;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    body.light .divider {
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+    }
+
+    .flip-card-container,
+    .flip-unit {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+    }
+
+    .flip-card-container {
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .flip-unit {
+      perspective: calc(var(--card-h) * 4);
+    }
+
+    .flip-top,
+    .flip-bottom,
+    .flip-panel {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 50%;
+      overflow: hidden;
+      box-shadow: inset 0 1px 1px var(--flip-inner);
+    }
+
+    .flip-top,
+    .flip-panel-top {
+      top: 0;
+      border-radius: var(--card-r) var(--card-r) 0 0;
+      background: var(--flip-card-top);
+    }
+
+    .flip-bottom,
+    .flip-panel-bottom {
+      bottom: 0;
+      border-radius: 0 0 var(--card-r) var(--card-r);
+      background: var(--flip-card);
+    }
+
+    .flip-panel {
+      visibility: hidden;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    .flip-panel.flip-a,
+    .flip-panel.flip-b {
+      visibility: visible;
+    }
+
+    .flip-panel-top {
+      z-index: 2;
+      transform-origin: 50% 100%;
+    }
+
+    .flip-panel-bottom {
+      z-index: 1;
+      transform-origin: 50% 0;
+    }
+
+    .flip-panel::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: var(--flip-shade);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .flip-text {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: var(--card-h);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+      font-size: var(--digit-size);
+      font-weight: 600;
+      line-height: var(--card-h);
+      font-variant-numeric: tabular-nums;
+      color: var(--flip-digit);
+      text-align: center;
+      user-select: none;
+    }
+
+    .flip-top .flip-text,
+    .flip-panel-top .flip-text { top: 0; }
+
+    .flip-bottom .flip-text,
+    .flip-panel-bottom .flip-text { top: auto; bottom: 0; }
+
+    .flip-panel-top.flip-a { animation: flip-fall var(--flip-duration) linear forwards; }
+    .flip-panel-top.flip-b { animation: flip-fall-b var(--flip-duration) linear forwards; }
+    .flip-panel-bottom.flip-a { animation: flip-land var(--flip-duration) linear forwards; }
+    .flip-panel-bottom.flip-b { animation: flip-land-b var(--flip-duration) linear forwards; }
+    .flip-panel-top.flip-a::after { animation: flip-dim-fall var(--flip-duration) linear forwards; }
+    .flip-panel-top.flip-b::after { animation: flip-dim-fall-b var(--flip-duration) linear forwards; }
+    .flip-panel-bottom.flip-a::after { animation: flip-dim-land var(--flip-duration) linear forwards; }
+    .flip-panel-bottom.flip-b::after { animation: flip-dim-land-b var(--flip-duration) linear forwards; }
+
+    @keyframes flip-fall {
+      0% { transform: rotateX(0); animation-timing-function: cubic-bezier(.5, 0, .85, .45); }
+      48%, to { transform: rotateX(-90.5deg); }
+    }
+    @keyframes flip-fall-b {
+      0% { transform: rotateX(0); animation-timing-function: cubic-bezier(.5, 0, .85, .45); }
+      48%, to { transform: rotateX(-90.5deg); }
+    }
+    @keyframes flip-land {
+      0%, 48% { transform: rotateX(90.5deg); animation-timing-function: cubic-bezier(.2, .55, .35, 1); }
+      to { transform: rotateX(0); }
+    }
+    @keyframes flip-land-b {
+      0%, 48% { transform: rotateX(90.5deg); animation-timing-function: cubic-bezier(.2, .55, .35, 1); }
+      to { transform: rotateX(0); }
+    }
+    @keyframes flip-dim-fall { 0% { opacity: 0; } 48%, to { opacity: 1; } }
+    @keyframes flip-dim-fall-b { 0% { opacity: 0; } 48%, to { opacity: 1; } }
+    @keyframes flip-dim-land { 0%, 48% { opacity: 1; } to { opacity: 0; } }
+    @keyframes flip-dim-land-b { 0%, 48% { opacity: 1; } to { opacity: 0; } }
+
+    body[data-look="simple"] { --flip-duration: .35s; }
+    body[data-look="simple"] .flip-top,
+    body[data-look="simple"] .flip-panel-top { background: var(--flip-card); }
+    body[data-look="simple"] .flip-panel::after { display: none; }
+    body[data-look="simple"] .flip-panel-top.flip-a { animation: flip-simple-top var(--flip-duration) cubic-bezier(.25, .1, .25, 1) forwards; }
+    body[data-look="simple"] .flip-panel-top.flip-b { animation: flip-simple-top-b var(--flip-duration) cubic-bezier(.25, .1, .25, 1) forwards; }
+    body[data-look="simple"] .flip-panel-bottom.flip-a { animation: flip-simple-bottom var(--flip-duration) cubic-bezier(.25, .1, .25, 1) forwards; }
+    body[data-look="simple"] .flip-panel-bottom.flip-b { animation: flip-simple-bottom-b var(--flip-duration) cubic-bezier(.25, .1, .25, 1) forwards; }
+
+    @keyframes flip-simple-top { 0% { transform: rotateX(0); } to { transform: rotateX(-180deg); } }
+    @keyframes flip-simple-top-b { 0% { transform: rotateX(0); } to { transform: rotateX(-180deg); } }
+    @keyframes flip-simple-bottom { 0% { transform: rotateX(180deg); } to { transform: rotateX(0); } }
+    @keyframes flip-simple-bottom-b { 0% { transform: rotateX(180deg); } to { transform: rotateX(0); } }
+
+    .flip-colon {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: calc(var(--card-h) * 0.18);
+      flex-shrink: 0;
+    }
+
+    .flip-colon::before,
+    .flip-colon::after {
+      content: "";
+      width: calc(var(--card-h) * 0.055);
+      height: calc(var(--card-h) * 0.055);
+      border-radius: 50%;
+      background: var(--text-3);
+    }
+
+    .date {
+      font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+      font-weight: 500;
+      color: var(--text-2);
+      letter-spacing: 0.04em;
+      text-transform: capitalize;
+      opacity: 0.9;
+      transition: opacity 0.3s;
+    }
+
+    .date.hidden { opacity: 0; height: 0; overflow: hidden; }
+
+    .settings-scrim {
+      position: fixed;
+      inset: 0;
+      z-index: 150;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.35s ease, visibility 0.35s;
+    }
+
+    body.settings-open .settings-scrim {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .settings-panel {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      bottom: 16px;
+      z-index: 160;
+      display: flex;
+      flex-direction: column;
+      width: 380px;
+      max-width: calc(100vw - 32px);
+      border-radius: 24px;
+      background: var(--sheet-bg);
+      -webkit-backdrop-filter: saturate(180%) blur(40px);
+      backdrop-filter: saturate(180%) blur(40px);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--separator);
+      overflow: hidden;
+      transform: translateX(calc(100% + 32px));
+      transition: transform 0.45s var(--ease-out), visibility 0.45s;
+      visibility: hidden;
+    }
+
+    .settings-panel.open {
+      transform: none;
+      visibility: visible;
+    }
+
+    .settings-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 18px 14px 24px;
+      border-bottom: 1px solid var(--separator);
+    }
+
+    .settings-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .settings-content {
+      flex: 1;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 16px 18px 28px;
+    }
+
+    .settings-group { margin-bottom: 24px; }
+
+    .settings-group-title {
+      padding: 0 6px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    .settings-list {
+      border-radius: 16px;
+      background: var(--sheet-group);
+      border: 1px solid var(--separator);
+      overflow: hidden;
+    }
+
+    .settings-row {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 54px;
+      padding: 12px 18px;
+      font-size: 15px;
+    }
+
+    .settings-row + .settings-row::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 18px;
+      right: 0;
+      height: 1px;
+      background: var(--separator);
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      flex-shrink: 0;
+      width: 50px;
+      height: 30px;
+    }
+
+    .switch input {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: var(--surface-3);
+      border: 1px solid var(--separator);
+      transition: background-color 0.25s, border-color 0.25s;
+    }
+
+    .slider::before {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      transition: transform 0.3s var(--ease-out);
+    }
+
+    .switch input:checked + .slider {
+      background: #3b82f6;
+      border-color: #3b82f6;
+    }
+
+    .switch input:checked + .slider::before {
+      transform: translateX(20px);
+    }
+
+    .look-picker {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .look-option {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-2);
+      cursor: pointer;
+    }
+
+    .look-swatch {
+      display: grid;
+      place-items: center;
+      width: 100%;
+      aspect-ratio: 1.5;
+      border-radius: 14px;
+      background: var(--surface-2);
+      border: 1px solid var(--separator);
+      transition: all 0.2s ease;
+    }
+
+    .look-swatch > span {
+      display: grid;
+      place-items: center;
+      width: 42%;
+      aspect-ratio: 0.85;
+      border-radius: 7px;
+      background: var(--flip-card);
+      color: var(--flip-digit);
+      font-size: 15px;
+      font-weight: 600;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+    }
+
+    .look-option[aria-checked="true"] .look-swatch {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px #3b82f6;
+    }
+
+    .look-option[aria-checked="true"] .look-name {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .hint {
+      position: fixed;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.78rem;
+      color: var(--text-3);
+      opacity: 0.6;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    body:hover .hint { opacity: 0.9; }
+    body.fullscreen-active .hint { opacity: 0; }
+
+    @media (max-width: 599px) {
+      :root { --header-h: 56px; }
+      .settings-panel {
+        inset: auto 0 0;
+        width: 100%;
+        max-width: none;
+        max-height: 88svh;
+        border-radius: 24px 24px 0 0;
+        transform: translateY(100%);
+      }
+      .settings-panel.open { transform: none; }
+      .header-brand h1 { font-size: 16px; }
+    }
+  </style>
+</head>
+<body data-look="standard">
+  <header class="app-header">
+    <div class="header-brand">
+      <span class="app-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" fill="none" stroke-width="1.6"/><path d="M8 2v4M16 2v4M3 10h18" stroke="currentColor" fill="none" stroke-width="1.6"/></svg>
+      </span>
+      <h1>Reloj Flip</h1>
+    </div>
+    <div class="header-actions">
+      <button class="icon-button" id="theme-btn" aria-label="Cambiar tema" title="Tema">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      </button>
+      <button class="icon-button" id="settings-toggle" aria-label="Configuración" aria-expanded="false">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+      <button class="icon-button" id="fullscreen-btn" aria-label="Pantalla completa">
+        <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <div class="clock-stage">
+      <div class="flip-display" id="clock-display">
+        <div class="card">
+          <div class="divider"></div>
+          <div class="flip-card-container">
+            <div class="flip-unit" id="hours-unit">
+              <div class="flip-top"><div class="flip-text" id="hours-top-text">00</div></div>
+              <div class="flip-bottom"><div class="flip-text" id="hours-bottom-text">00</div></div>
+              <div class="flip-panel flip-panel-top" id="hours-flip-top"><div class="flip-text" id="hours-flip-top-text">00</div></div>
+              <div class="flip-panel flip-panel-bottom" id="hours-flip-bottom"><div class="flip-text" id="hours-flip-bottom-text">00</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flip-colon" aria-hidden="true"></div>
+
+        <div class="card">
+          <div class="divider"></div>
+          <div class="flip-card-container">
+            <div class="flip-unit" id="minutes-unit">
+              <div class="flip-top"><div class="flip-text" id="minutes-top-text">00</div></div>
+              <div class="flip-bottom"><div class="flip-text" id="minutes-bottom-text">00</div></div>
+              <div class="flip-panel flip-panel-top" id="minutes-flip-top"><div class="flip-text" id="minutes-flip-top-text">00</div></div>
+              <div class="flip-panel flip-panel-bottom" id="minutes-flip-bottom"><div class="flip-text" id="minutes-flip-bottom-text">00</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flip-colon seconds-colon" aria-hidden="true"></div>
+
+        <div class="card seconds-card">
+          <div class="divider"></div>
+          <div class="flip-card-container">
+            <div class="flip-unit" id="seconds-unit">
+              <div class="flip-top"><div class="flip-text" id="seconds-top-text">00</div></div>
+              <div class="flip-bottom"><div class="flip-text" id="seconds-bottom-text">00</div></div>
+              <div class="flip-panel flip-panel-top" id="seconds-flip-top"><div class="flip-text" id="seconds-flip-top-text">00</div></div>
+              <div class="flip-panel flip-panel-bottom" id="seconds-flip-bottom"><div class="flip-text" id="seconds-flip-bottom-text">00</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="date" id="date"></div>
+    </div>
+  </main>
+
+  <div class="hint">Doble clic · Pantalla completa</div>
+
+  <div id="settings-scrim" class="settings-scrim"></div>
+  <div id="settings-panel" class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settings-title" inert>
+    <div class="settings-header">
+      <h2 id="settings-title" class="settings-title">Configuración</h2>
+      <button id="close-settings" class="icon-button" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="settings-content">
+      <div class="settings-group">
+        <h3 class="settings-group-title">Estilo de animación</h3>
+        <div class="look-picker" role="radiogroup">
+          <button type="button" class="look-option" data-look="simple" role="radio" aria-checked="false">
+            <span class="look-swatch"><span>12</span></span>
+            <span class="look-name">Sencillo</span>
+          </button>
+          <button type="button" class="look-option" data-look="standard" role="radio" aria-checked="true">
+            <span class="look-swatch"><span>12</span></span>
+            <span class="look-name">Estándar</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <h3 class="settings-group-title">Visualización</h3>
+        <div class="settings-list">
+          <div class="settings-row">
+            <label for="format24">Formato 24 horas</label>
+            <label class="switch">
+              <input type="checkbox" id="format24" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="settings-row">
+            <label for="showSeconds">Mostrar segundos</label>
+            <label class="switch">
+              <input type="checkbox" id="showSeconds" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="settings-row">
+            <label for="showDate">Mostrar fecha</label>
+            <label class="switch">
+              <input type="checkbox" id="showDate" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+
+    const FLIP_MS = { simple: 380, standard: 480 };
+
+    function createFlipUnit(id) {
+      const get = (part) => document.getElementById(`${id}-${part}`);
+      const top = get('top-text');
+      const bottom = get('bottom-text');
+      const flapTop = get('flip-top');
+      const flapBottom = get('flip-bottom');
+      const flapTopText = get('flip-top-text');
+      const flapBottomText = get('flip-bottom-text');
+      const parts = [flapTop, flapBottom].filter(Boolean);
+      let current = null;
+      let settleTimer = null;
+      let phase = 'flip-b';
+
+      const clear = () => parts.forEach(el => el.classList.remove('flip-a', 'flip-b'));
+
+      function flip(from, to) {
+        const look = document.body.dataset.look || 'standard';
+        const ms = FLIP_MS[look] || 480;
+        clearTimeout(settleTimer);
+        clear();
+        top.textContent = to;
+        bottom.textContent = flapTopText.textContent = from;
+        flapBottomText.textContent = to;
+        phase = phase === 'flip-a' ? 'flip-b' : 'flip-a';
+        parts.forEach(el => el.classList.add(phase));
+        settleTimer = setTimeout(() => {
+          bottom.textContent = to;
+          clear();
+        }, ms + 20);
+      }
+
+      return {
+        set(value, animate = true) {
+          value = String(value).padStart(2, '0');
+          if (!top || value === current) return;
+          const previous = current;
+          current = value;
+          if (previous === null || !animate || document.hidden) {
+            clearTimeout(settleTimer);
+            clear();
+            top.textContent = bottom.textContent = flapTopText.textContent = flapBottomText.textContent = value;
+            return;
+          }
+          flip(previous, value);
+        }
+      };
+    }
+
+    const hoursUnit = createFlipUnit('hours');
+    const minutesUnit = createFlipUnit('minutes');
+    const secondsUnit = createFlipUnit('seconds');
+
+    const settings = {
+      format24: true,
+      showSeconds: true,
+      showDate: true,
+      theme: 'dark',
+      look: 'standard'
+    };
+
+    try {
+      const saved = JSON.parse(localStorage.getItem('minimalFlipClock'));
+      if (saved) Object.assign(settings, saved);
+    } catch (e) {}
+
+    function save() {
+      localStorage.setItem('minimalFlipClock', JSON.stringify(settings));
+    }
+
+    document.body.dataset.look = settings.look;
+    document.querySelectorAll('.look-option').forEach(o => {
+      o.setAttribute('aria-checked', o.dataset.look === settings.look);
+    });
+
+    if (settings.theme === 'light') document.body.classList.add('light');
+
+    const dateEl = document.getElementById('date');
+    const secondsCard = document.querySelector('.seconds-card');
+    const secondsColon = document.querySelector('.seconds-colon');
+
+    function updateTime(animate = true) {
+      const now = new Date();
+      let h = now.getHours();
+      const m = now.getMinutes();
+      const s = now.getSeconds();
+
+      if (!settings.format24) {
+        h = h % 12 || 12;
+      }
+
+      hoursUnit.set(h, animate);
+      minutesUnit.set(m, animate);
+      secondsUnit.set(s, animate);
+
+      if (settings.showDate) {
+        const opts = { weekday: 'long', day: 'numeric', month: 'long' };
+        dateEl.textContent = now.toLocaleDateString('es-ES', opts);
+        dateEl.classList.remove('hidden');
+      } else {
+        dateEl.classList.add('hidden');
+      }
+    }
+
+    function applyVisibility() {
+      if (settings.showSeconds) {
+        secondsCard.style.display = '';
+        secondsColon.style.display = '';
+      } else {
+        secondsCard.style.display = 'none';
+        secondsColon.style.display = 'none';
+      }
+    }
+
+    const panel = document.getElementById('settings-panel');
+    const scrim = document.getElementById('settings-scrim');
+
+    function setSettingsOpen(open) {
+      panel.classList.toggle('open', open);
+      panel.inert = !open;
+      document.body.classList.toggle('settings-open', open);
+      document.getElementById('settings-toggle').setAttribute('aria-expanded', open);
+    }
+
+    document.getElementById('settings-toggle').addEventListener('click', () => setSettingsOpen(true));
+    document.getElementById('close-settings').addEventListener('click', () => setSettingsOpen(false));
+    scrim.addEventListener('click', () => setSettingsOpen(false));
+
+    document.querySelectorAll('.look-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        const look = opt.dataset.look;
+        settings.look = look;
+        document.body.dataset.look = look;
+        document.querySelectorAll('.look-option').forEach(o => {
+          o.setAttribute('aria-checked', o.dataset.look === look);
+        });
+        save();
+      });
+    });
+
+    function bindToggle(id, key, onChange) {
+      const el = document.getElementById(id);
+      el.checked = settings[key];
+      el.addEventListener('change', () => {
+        settings[key] = el.checked;
+        save();
+        if (onChange) onChange();
+        updateTime(false);
+      });
+    }
+
+    bindToggle('format24', 'format24');
+    bindToggle('showSeconds', 'showSeconds', applyVisibility);
+    bindToggle('showDate', 'showDate');
+
+    document.getElementById('theme-btn').addEventListener('click', () => {
+      settings.theme = settings.theme === 'dark' ? 'light' : 'dark';
+      document.body.classList.toggle('light', settings.theme === 'light');
+      document.querySelector('meta[name="theme-color"]').content =
+        settings.theme === 'light' ? '#f4f4f5' : '#0a0a0a';
+      save();
+    });
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
+    document.addEventListener('dblclick', (e) => {
+      if (!e.target.closest('.app-header') && !e.target.closest('.settings-panel')) {
+        toggleFullscreen();
+      }
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      document.body.classList.toggle('fullscreen-active', !!document.fullscreenElement);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+      if (e.key === 'Escape') setSettingsOpen(false);
+    });
+
+    applyVisibility();
+    updateTime(false);
+    setInterval(() => updateTime(true), 1000);
+  })();
+  </script>
+</body>
+</html>
