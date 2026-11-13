@@ -1,1 +1,837 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#3B141A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Reloj Flip · Minimal</title>
+  <meta name="description" content="Reloj flip online minimalista con animación clásica de alta calidad">
+  <style>
+    :root {
+      /* Paleta Granate / Vino */
+      --bg: #3B141A;
+      --surface: #522129;
+      --surface-2: #481d24;
+      --surface-3: #612731;
+      --text: #FDF3E7;
+      --text-2: rgba(253, 243, 231, 0.78);
+      --text-3: rgba(253, 243, 231, 0.55);
+      --accent: #E5A853;
+      --accent-soft: rgba(229, 168, 83, 0.14);
+      --separator: rgba(201, 134, 59, 0.25);
+      --separator-strong: rgba(201, 134, 59, 0.4);
+      --header-bg: rgba(59, 20, 26, 0.88);
+      --sheet-bg: rgba(59, 20, 26, 0.96);
+      --sheet-group: rgba(82, 33, 41, 0.75);
+      --shadow-lg: 0 25px 60px -15px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(201, 134, 59, 0.2);
+      --flip-card: #522129;
+      --flip-card-top: #451b22;
+      --flip-digit: #FDF3E7;
+      --flip-fold: #C9863B;
+      --flip-shade: rgba(0, 0, 0, 0.4);
+      --flip-inner: rgba(253, 243, 231, 0.07);
+      --flip-edge: rgba(201, 134, 59, 0.35);
+      --flip-highlight: rgba(229, 168, 83, 0.25);
+      --flip-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), 0 4px 10px rgba(0, 0, 0, 0.35);
+      --ease-out: cubic-bezier(.22, 1, .36, 1);
+      --flip-duration: .45s;
+      --header-h: 64px;
+      --vh100: 100vh;
+      color-scheme: dark;
+    }
+
+    @supports (height: 100svh) {
+      :root { --vh100: 100svh; }
+    }
+
+    body.light {
+      --bg: #FDF3E7;
+      --surface: #ffffff;
+      --surface-2: #f8efe3;
+      --surface-3: #f0e4d4;
+      --text: #3B141A;
+      --text-2: rgba(59, 20, 26, 0.72);
+      --text-3: rgba(59, 20, 26, 0.45);
+      --accent: #C9863B;
+      --accent-soft: rgba(201, 134, 59, 0.12);
+      --separator: rgba(59, 20, 26, 0.1);
+      --separator-strong: rgba(59, 20, 26, 0.18);
+      --header-bg: rgba(253, 243, 231, 0.9);
+      --sheet-bg: rgba(253, 243, 231, 0.97);
+      --sheet-group: rgba(248, 239, 227, 0.95);
+      --shadow-lg: 0 25px 60px -15px rgba(59, 20, 26, 0.18);
+      --flip-card: #ffffff;
+      --flip-card-top: #faf4eb;
+      --flip-digit: #3B141A;
+      --flip-fold: #C9863B;
+      --flip-shade: rgba(59, 20, 26, 0.12);
+      --flip-inner: rgba(59, 20, 26, 0.04);
+      --flip-edge: rgba(201, 134, 59, 0.25);
+      --flip-highlight: rgba(255, 255, 255, 0.7);
+      --flip-shadow: 0 16px 36px rgba(59, 20, 26, 0.12), 0 4px 10px rgba(59, 20, 26, 0.06);
+      color-scheme: light;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+    body {
+      min-height: 100vh;
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      letter-spacing: -0.011em;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      transition: background-color 0.35s ease, color 0.35s ease;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    button { background: none; border: 0; cursor: pointer; font: inherit; color: inherit; }
+    button:disabled { cursor: default; opacity: 0.4; }
+    [hidden] { display: none !important; }
+
+    .app-header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--header-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      background: var(--header-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--separator);
+      z-index: 50;
+      transition: opacity 0.3s, transform 0.3s;
+    }
+
+    body.fullscreen-active .app-header {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-100%);
+    }
+
+    .app-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-2);
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .icon-btn:hover {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .icon-btn svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.75;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: calc(var(--header-h) + 12px) 16px 32px;
+      transition: padding 0.3s;
+    }
+
+    body.fullscreen-active main {
+      padding-top: 16px;
+    }
+
+    .clock-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+    }
+
+    body.fullscreen-active .clock-stage {
+      gap: 20px;
+    }
+
+    /* ========== FLIP CLOCK ========== */
+    .flip-display {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      perspective: 1000px;
+    }
+
+    body.light .flip-display {
+      filter: none;
+    }
+
+    .flip-unit {
+      display: flex;
+      gap: 5px;
+    }
+
+    .flip-card-container {
+      position: relative;
+      width: 78px;
+      height: 110px;
+    }
+
+    .flip-card {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 10px;
+      background: var(--flip-card);
+      box-shadow: var(--flip-shadow);
+      overflow: hidden;
+    }
+
+    .flip-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      box-shadow: inset 0 0 0 1px var(--flip-edge), inset 0 1.5px 0 var(--flip-highlight);
+      pointer-events: none;
+      z-index: 30;
+    }
+
+    .flip-card::after {
+      content: "";
+      position: absolute;
+      left: 0; right: 0;
+      top: 50%;
+      height: 2px;
+      margin-top: -1px;
+      background: var(--flip-fold);
+      z-index: 25;
+      box-shadow: 0 0 6px var(--flip-shade);
+    }
+
+    .flip-top,
+    .flip-bottom,
+    .flip-panel {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 50%;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      backface-visibility: hidden;
+    }
+
+    .flip-top,
+    .flip-panel-top {
+      top: 0;
+      border-radius: 10px 10px 0 0;
+      background: var(--flip-card-top);
+      align-items: flex-end;
+    }
+
+    .flip-bottom,
+    .flip-panel-bottom {
+      bottom: 0;
+      border-radius: 0 0 10px 10px;
+      background: var(--flip-card);
+      align-items: flex-start;
+    }
+
+    .flip-digit {
+      font-size: 72px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      line-height: 110px;
+      color: var(--flip-digit);
+      letter-spacing: -0.03em;
+    }
+
+    .flip-top .flip-digit { transform: translateY(0); }
+    .flip-bottom .flip-digit { transform: translateY(-55px); }
+
+    .flip-panel {
+      z-index: 15;
+      transform-style: preserve-3d;
+    }
+
+    .flip-panel-top {
+      transform-origin: bottom center;
+    }
+
+    .flip-panel-bottom {
+      transform-origin: top center;
+      transform: rotateX(90deg);
+    }
+
+    .flip-panel .flip-digit {
+      font-size: 72px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      line-height: 110px;
+      color: var(--flip-digit);
+      letter-spacing: -0.03em;
+    }
+
+    .flip-panel-top .flip-digit { transform: translateY(0); }
+    .flip-panel-bottom .flip-digit { transform: translateY(-55px); }
+
+    .flip-card.flipping .flip-panel-top {
+      animation: flipTop var(--flip-duration) var(--ease-out) forwards;
+    }
+
+    .flip-card.flipping .flip-panel-bottom {
+      animation: flipBottom var(--flip-duration) var(--ease-out) forwards;
+    }
+
+    @keyframes flipTop {
+      0%   { transform: rotateX(0deg); z-index: 20; }
+      49%  { z-index: 20; }
+      50%  { z-index: 10; }
+      100% { transform: rotateX(-90deg); z-index: 10; }
+    }
+
+    @keyframes flipBottom {
+      0%   { transform: rotateX(90deg); z-index: 10; }
+      49%  { z-index: 10; }
+      50%  { z-index: 20; }
+      100% { transform: rotateX(0deg); z-index: 20; }
+    }
+
+    .colon {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 16px;
+      padding: 0 2px;
+      height: 110px;
+    }
+
+    .colon span {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+      opacity: 0.9;
+      box-shadow: 0 0 10px rgba(229, 168, 83, 0.35);
+    }
+
+    body.light .colon span {
+      box-shadow: 0 0 8px rgba(201, 134, 59, 0.3);
+    }
+
+    .date-line {
+      font-size: 1.05rem;
+      font-weight: 400;
+      color: var(--text-2);
+      letter-spacing: 0.01em;
+      text-transform: capitalize;
+      transition: opacity 0.25s;
+    }
+
+    .date-line[hidden] {
+      display: none;
+    }
+
+    /* ========== SETTINGS SHEET ========== */
+    .scrim {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 80;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.28s, visibility 0.28s;
+    }
+
+    body.settings-open .scrim {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .settings-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: min(320px, 100vw);
+      background: var(--sheet-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 90;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.32s var(--ease-out);
+      box-shadow: var(--shadow-lg);
+    }
+
+    body.settings-open .settings-panel {
+      transform: translateX(0);
+    }
+
+    .settings-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 18px 12px;
+      border-bottom: 1px solid var(--separator);
+    }
+
+    .settings-header h2 {
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    .settings-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 18px 32px;
+    }
+
+    .settings-group {
+      background: var(--sheet-group);
+      border-radius: 14px;
+      padding: 4px 0;
+      margin-bottom: 16px;
+    }
+
+    .settings-group + .settings-group {
+      margin-top: 4px;
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 16px;
+    }
+
+    .setting-row label {
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+
+    .look-options {
+      display: flex;
+      gap: 8px;
+      padding: 8px 16px 14px;
+    }
+
+    .look-option {
+      flex: 1;
+      padding: 10px 8px;
+      border-radius: 10px;
+      border: 1.5px solid var(--separator);
+      background: transparent;
+      color: var(--text-2);
+      font-size: 0.82rem;
+      font-weight: 500;
+      text-align: center;
+      transition: border-color 0.2s, background 0.2s, color 0.2s;
+    }
+
+    .look-option[aria-checked="true"] {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    /* Toggle */
+    .toggle {
+      position: relative;
+      width: 46px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .toggle .slider {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.25);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: background 0.22s;
+    }
+
+    body.light .toggle .slider {
+      background: rgba(0,0,0,0.12);
+    }
+
+    .toggle .slider::before {
+      content: "";
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      left: 3px;
+      top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.22s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    }
+
+    .toggle input:checked + .slider {
+      background: var(--accent);
+    }
+
+    .toggle input:checked + .slider::before {
+      transform: translateX(18px);
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .flip-card-container {
+        width: 58px;
+        height: 82px;
+      }
+      .flip-digit,
+      .flip-panel .flip-digit {
+        font-size: 52px;
+        line-height: 82px;
+      }
+      .flip-top .flip-digit { transform: translateY(0); }
+      .flip-bottom .flip-digit { transform: translateY(-41px); }
+      .flip-panel-bottom .flip-digit { transform: translateY(-41px); }
+      .colon { height: 82px; gap: 12px; }
+      .colon span { width: 7px; height: 7px; }
+      .date-line { font-size: 0.92rem; }
+    }
+
+    @media (min-width: 900px) {
+      .flip-card-container {
+        width: 96px;
+        height: 136px;
+      }
+      .flip-digit,
+      .flip-panel .flip-digit {
+        font-size: 90px;
+        line-height: 136px;
+      }
+      .flip-bottom .flip-digit { transform: translateY(-68px); }
+      .flip-panel-bottom .flip-digit { transform: translateY(-68px); }
+      .colon { height: 136px; gap: 22px; }
+      .colon span { width: 11px; height: 11px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-title">Reloj Flip</div>
+    <div class="header-actions">
+      <button class="icon-btn" id="theme-btn" title="Cambiar tema" aria-label="Cambiar tema">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      </button>
+      <button class="icon-btn" id="fullscreen-btn" title="Pantalla completa" aria-label="Pantalla completa">
+        <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+      </button>
+      <button class="icon-btn" id="settings-toggle" title="Ajustes" aria-label="Ajustes" aria-expanded="false">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="scrim" id="scrim"></div>
+
+  <aside class="settings-panel" id="settings-panel" aria-label="Ajustes">
+    <div class="settings-header">
+      <h2>Ajustes</h2>
+      <button class="icon-btn" id="close-settings" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-group">
+        <div class="setting-row">
+          <label for="format24">Formato 24 horas</label>
+          <label class="toggle">
+            <input type="checkbox" id="format24" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <label for="showSeconds">Mostrar segundos</label>
+          <label class="toggle">
+            <input type="checkbox" id="showSeconds" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <label for="showDate">Mostrar fecha</label>
+          <label class="toggle">
+            <input type="checkbox" id="showDate" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="setting-row" style="padding-bottom: 6px;">
+          <label>Estilo de dígitos</label>
+        </div>
+        <div class="look-options" role="radiogroup">
+          <button class="look-option" data-look="standard" aria-checked="true" role="radio">Estándar</button>
+          <button class="look-option" data-look="simple" aria-checked="false" role="radio">Sencillo</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="clock-stage">
+      <div class="flip-display" id="clock">
+        <div class="flip-unit" id="hours">
+          <div class="flip-card-container"><div class="flip-card" data-value="0"><div class="flip-top"><span class="flip-digit">0</span></div><div class="flip-bottom"><span class="flip-digit">0</span></div></div></div>
+          <div class="flip-card-container"><div class="flip-card" data-value="0"><div class="flip-top"><span class="flip-digit">0</span></div><div class="flip-bottom"><span class="flip-digit">0</span></div></div></div>
+        </div>
+        <div class="colon"><span></span><span></span></div>
+        <div class="flip-unit" id="minutes">
+          <div class="flip-card-container"><div class="flip-card" data-value="0"><div class="flip-top"><span class="flip-digit">0</span></div><div class="flip-bottom"><span class="flip-digit">0</span></div></div></div>
+          <div class="flip-card-container"><div class="flip-card" data-value="0"><div class="flip-top"><span class="flip-digit">0</span></div><div class="flip-bottom"><span class="flip-digit">0</span></div></div></div>
+        </div>
+        <div class="colon" id="colon-seconds"><span></span><span></span></div>
+        <div class="flip-unit" id="seconds">
+          <div class="flip-card-container"><div class="flip-card" data-value="0"><div class="flip-top"><span class="flip-digit">0</span></div><div class="flip-bottom"><span class="flip-digit">0</span></div></div></div>
+          <div class="flip-card-container"><div class="flip-card" data-value="0"><div class="flip-top"><span class="flip-digit">0</span></div><div class="flip-bottom"><span class="flip-digit">0</span></div></div></div>
+        </div>
+      </div>
+      <div class="date-line" id="date"></div>
+    </div>
+  </main>
+
+  <script>
+  (function () {
+    const STORAGE_KEY = 'minimal-flip-clock';
+    const defaults = {
+      format24: true,
+      showSeconds: true,
+      showDate: true,
+      theme: 'dark',
+      look: 'standard'
+    };
+
+    let settings = { ...defaults };
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (saved) settings = { ...defaults, ...saved };
+    } catch (_) {}
+
+    function save() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch (_) {}
+    }
+
+    // Apply theme
+    if (settings.theme === 'light') {
+      document.body.classList.add('light');
+      document.querySelector('meta[name="theme-color"]').content = '#FDF3E7';
+    }
+    document.body.dataset.look = settings.look;
+
+    function pad(n) { return n < 10 ? '0' + n : String(n); }
+
+    function createPanel(value, type) {
+      const panel = document.createElement('div');
+      panel.className = 'flip-panel flip-panel-' + type;
+      const span = document.createElement('span');
+      span.className = 'flip-digit';
+      span.textContent = value;
+      panel.appendChild(span);
+      return panel;
+    }
+
+    function setDigit(card, value, animate) {
+      const prev = card.dataset.value;
+      const str = String(value);
+      if (prev === str && !card.classList.contains('flipping')) return;
+
+      if (!animate || prev === undefined) {
+        card.dataset.value = str;
+        card.querySelectorAll('.flip-digit').forEach(el => el.textContent = str);
+        return;
+      }
+
+      if (card.classList.contains('flipping')) {
+        card.classList.remove('flipping');
+        card.querySelectorAll('.flip-panel').forEach(p => p.remove());
+        card.querySelectorAll('.flip-digit').forEach(el => el.textContent = prev);
+      }
+
+      const topPanel = createPanel(prev, 'top');
+      const bottomPanel = createPanel(str, 'bottom');
+      card.appendChild(topPanel);
+      card.appendChild(bottomPanel);
+
+      card.querySelector('.flip-top .flip-digit').textContent = str;
+
+      void card.offsetWidth;
+      card.classList.add('flipping');
+
+      const onEnd = (e) => {
+        if (e.animationName !== 'flipBottom') return;
+        card.classList.remove('flipping');
+        card.querySelectorAll('.flip-panel').forEach(p => p.remove());
+        card.querySelector('.flip-bottom .flip-digit').textContent = str;
+        card.dataset.value = str;
+        card.removeEventListener('animationend', onEnd);
+      };
+      card.addEventListener('animationend', onEnd);
+    }
+
+    function applyVisibility() {
+      const sec = document.getElementById('seconds');
+      const colon = document.getElementById('colon-seconds');
+      const date = document.getElementById('date');
+      if (settings.showSeconds) {
+        sec.hidden = false;
+        colon.hidden = false;
+      } else {
+        sec.hidden = true;
+        colon.hidden = true;
+      }
+      date.hidden = !settings.showDate;
+    }
+
+    function updateTime(animate) {
+      const now = new Date();
+      let h = now.getHours();
+      const m = now.getMinutes();
+      const s = now.getSeconds();
+
+      if (!settings.format24) {
+        h = h % 12 || 12;
+      }
+
+      const hStr = pad(h);
+      const mStr = pad(m);
+      const sStr = pad(s);
+
+      const hourCards = document.querySelectorAll('#hours .flip-card');
+      const minCards  = document.querySelectorAll('#minutes .flip-card');
+      const secCards  = document.querySelectorAll('#seconds .flip-card');
+
+      setDigit(hourCards[0], hStr[0], animate);
+      setDigit(hourCards[1], hStr[1], animate);
+      setDigit(minCards[0],  mStr[0], animate);
+      setDigit(minCards[1],  mStr[1], animate);
+      setDigit(secCards[0],  sStr[0], animate);
+      setDigit(secCards[1],  sStr[1], animate);
+
+      if (settings.showDate) {
+        const opts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+        document.getElementById('date').textContent = now.toLocaleDateString('es-ES', opts);
+      }
+    }
+
+    // Settings UI
+    const scrim = document.getElementById('scrim');
+
+    function setSettingsOpen(open) {
+      document.body.classList.toggle('settings-open', open);
+      document.getElementById('settings-toggle').setAttribute('aria-expanded', open);
+    }
+
+    document.getElementById('settings-toggle').addEventListener('click', () => setSettingsOpen(true));
+    document.getElementById('close-settings').addEventListener('click', () => setSettingsOpen(false));
+    scrim.addEventListener('click', () => setSettingsOpen(false));
+
+    document.querySelectorAll('.look-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        const look = opt.dataset.look;
+        settings.look = look;
+        document.body.dataset.look = look;
+        document.querySelectorAll('.look-option').forEach(o => {
+          o.setAttribute('aria-checked', o.dataset.look === look);
+        });
+        save();
+      });
+    });
+
+    function bindToggle(id, key, onChange) {
+      const el = document.getElementById(id);
+      el.checked = settings[key];
+      el.addEventListener('change', () => {
+        settings[key] = el.checked;
+        save();
+        if (onChange) onChange();
+        updateTime(false);
+      });
+    }
+
+    bindToggle('format24', 'format24');
+    bindToggle('showSeconds', 'showSeconds', applyVisibility);
+    bindToggle('showDate', 'showDate');
+
+    document.getElementById('theme-btn').addEventListener('click', () => {
+      settings.theme = settings.theme === 'dark' ? 'light' : 'dark';
+      document.body.classList.toggle('light', settings.theme === 'light');
+      document.querySelector('meta[name="theme-color"]').content =
+        settings.theme === 'light' ? '#FDF3E7' : '#3B141A';
+      save();
+    });
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
+    document.addEventListener('dblclick', (e) => {
+      if (!e.target.closest('.app-header') && !e.target.closest('.settings-panel')) {
+        toggleFullscreen();
+      }
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      document.body.classList.toggle('fullscreen-active', !!document.fullscreenElement);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+      if (e.key === 'Escape') setSettingsOpen(false);
+    });
+
+    applyVisibility();
+    updateTime(false);
+    setInterval(() => updateTime(true), 1000);
+  })();
+  </script>
+</body>
+</html>
